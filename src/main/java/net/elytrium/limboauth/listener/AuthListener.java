@@ -76,7 +76,7 @@ public class AuthListener {
   @Subscribe
   public void onLoginLimboRegister(LoginLimboRegisterEvent event) {
     if (this.plugin.needAuth(event.getPlayer())) {
-      event.addCallback(() -> this.plugin.authPlayer(event.getPlayer()));
+      event.addOnJoinCallback(() -> this.plugin.authPlayer(event.getPlayer()));
     }
   }
 

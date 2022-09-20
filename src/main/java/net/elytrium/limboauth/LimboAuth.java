@@ -106,20 +106,13 @@ import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 
-@Plugin(
-    id = "limboauth",
-    name = "LimboAuth",
-    version = BuildConstants.AUTH_VERSION,
-    url = "https://elytrium.net/",
-    authors = {
-        "hevav",
-        "mdxd44"
-    },
-    dependencies = {
-        @Dependency(id = "limboapi"),
-        @Dependency(id = "floodgate", optional = true)
-    }
-)
+@Plugin(id = "limboauth", name = "LimboAuth", version = BuildConstants.AUTH_VERSION, url = "https://elytrium.net/", authors = {
+    "hevav",
+    "mdxd44"
+}, dependencies = {
+    @Dependency(id = "limboapi"),
+    @Dependency(id = "floodgate", optional = true)
+})
 public class LimboAuth {
 
   @MonotonicNonNull
@@ -161,7 +154,8 @@ public class LimboAuth {
   private Limbo authServer;
 
   @Inject
-  public LimboAuth(Logger logger, ProxyServer server, Metrics.Factory metricsFactory, @DataDirectory Path dataDirectory) {
+  public LimboAuth(Logger logger, ProxyServer server, Metrics.Factory metricsFactory,
+      @DataDirectory Path dataDirectory) {
     setLogger(logger);
 
     this.server = server;
@@ -171,7 +165,8 @@ public class LimboAuth {
     this.dataDirectoryFile = dataDirectory.toFile();
     this.configFile = new File(this.dataDirectoryFile, "config.yml");
 
-    this.factory = (LimboFactory) this.server.getPluginManager().getPlugin("limboapi").flatMap(PluginContainer::getInstance).orElseThrow();
+    this.factory = (LimboFactory) this.server.getPluginManager().getPlugin("limboapi")
+        .flatMap(PluginContainer::getInstance).orElseThrow();
 
     if (this.server.getPluginManager().getPlugin("floodgate").isPresent()) {
       this.floodgateApi = new FloodgateApiHolder();
@@ -187,8 +182,10 @@ public class LimboAuth {
     this.reload();
 
     Metrics metrics = this.metricsFactory.make(this, 13700);
-    metrics.addCustomChart(new SimplePie("floodgate_auth", () -> String.valueOf(Settings.IMP.MAIN.FLOODGATE_NEED_AUTH)));
-    metrics.addCustomChart(new SimplePie("premium_auth", () -> String.valueOf(Settings.IMP.MAIN.ONLINE_MODE_NEED_AUTH)));
+    metrics
+        .addCustomChart(new SimplePie("floodgate_auth", () -> String.valueOf(Settings.IMP.MAIN.FLOODGATE_NEED_AUTH)));
+    metrics
+        .addCustomChart(new SimplePie("premium_auth", () -> String.valueOf(Settings.IMP.MAIN.ONLINE_MODE_NEED_AUTH)));
     metrics.addCustomChart(new SimplePie("db_type", () -> Settings.IMP.DATABASE.STORAGE_TYPE));
     metrics.addCustomChart(new SimplePie("load_world", () -> String.valueOf(Settings.IMP.MAIN.LOAD_WORLD)));
     metrics.addCustomChart(new SimplePie("totp_enabled", () -> String.valueOf(Settings.IMP.MAIN.ENABLE_TOTP)));
@@ -196,7 +193,8 @@ public class LimboAuth {
     metrics.addCustomChart(new SimplePie("save_uuid", () -> String.valueOf(Settings.IMP.MAIN.SAVE_UUID)));
     metrics.addCustomChart(new SingleLineChart("registered_players", () -> Math.toIntExact(this.playerDao.countOf())));
 
-    if (!UpdatesChecker.checkVersionByURL("https://raw.githubusercontent.com/Elytrium/LimboAuth/master/VERSION", Settings.IMP.VERSION)) {
+    if (!UpdatesChecker.checkVersionByURL("https://raw.githubusercontent.com/Elytrium/LimboAuth/master/VERSION",
+        Settings.IMP.VERSION)) {
       LOGGER.error("****************************************");
       LOGGER.warn("The new LimboAuth update was found, please update.");
       LOGGER.error("https://github.com/Elytrium/LimboAuth/releases/");
@@ -209,11 +207,13 @@ public class LimboAuth {
     Settings.IMP.reload(this.configFile, Settings.IMP.PREFIX);
 
     if (this.floodgateApi == null && !Settings.IMP.MAIN.FLOODGATE_NEED_AUTH) {
-      throw new IllegalStateException("If you want floodgate players to automatically pass auth (floodgate-need-auth: false),"
-          + " please install floodgate plugin.");
+      throw new IllegalStateException(
+          "If you want floodgate players to automatically pass auth (floodgate-need-auth: false),"
+              + " please install floodgate plugin.");
     }
 
-    ComponentSerializer<Component, Component, String> serializer = Serializers.valueOf(Settings.IMP.SERIALIZER.toUpperCase(Locale.ROOT)).getSerializer();
+    ComponentSerializer<Component, Component, String> serializer = Serializers
+        .valueOf(Settings.IMP.SERIALIZER.toUpperCase(Locale.ROOT)).getSerializer();
     if (serializer == null) {
       LOGGER.warn("The specified serializer could not be founded, using default. (LEGACY_AMPERSAND)");
       setSerializer(new Serializer(Objects.requireNonNull(Serializers.LEGACY_AMPERSAND.getSerializer())));
@@ -224,26 +224,28 @@ public class LimboAuth {
     TaskEvent.reload();
     AuthSessionHandler.reload();
 
-    this.loginPremium = Settings.IMP.MAIN.STRINGS.LOGIN_PREMIUM.isEmpty() ? null : SERIALIZER.deserialize(Settings.IMP.MAIN.STRINGS.LOGIN_PREMIUM);
-    if (Settings.IMP.MAIN.STRINGS.LOGIN_PREMIUM_TITLE.isEmpty() && Settings.IMP.MAIN.STRINGS.LOGIN_PREMIUM_SUBTITLE.isEmpty()) {
+    this.loginPremium = Settings.IMP.MAIN.STRINGS.LOGIN_PREMIUM.isEmpty() ? null
+        : SERIALIZER.deserialize(Settings.IMP.MAIN.STRINGS.LOGIN_PREMIUM);
+    if (Settings.IMP.MAIN.STRINGS.LOGIN_PREMIUM_TITLE.isEmpty()
+        && Settings.IMP.MAIN.STRINGS.LOGIN_PREMIUM_SUBTITLE.isEmpty()) {
       this.loginPremiumTitle = null;
     } else {
       this.loginPremiumTitle = Title.title(
           SERIALIZER.deserialize(Settings.IMP.MAIN.STRINGS.LOGIN_PREMIUM_TITLE),
           SERIALIZER.deserialize(Settings.IMP.MAIN.STRINGS.LOGIN_PREMIUM_SUBTITLE),
-          Settings.IMP.MAIN.PREMIUM_TITLE_SETTINGS.toTimes()
-      );
+          Settings.IMP.MAIN.PREMIUM_TITLE_SETTINGS.toTimes());
     }
 
-    this.loginFloodgate = Settings.IMP.MAIN.STRINGS.LOGIN_FLOODGATE.isEmpty() ? null : SERIALIZER.deserialize(Settings.IMP.MAIN.STRINGS.LOGIN_FLOODGATE);
-    if (Settings.IMP.MAIN.STRINGS.LOGIN_FLOODGATE_TITLE.isEmpty() && Settings.IMP.MAIN.STRINGS.LOGIN_FLOODGATE_SUBTITLE.isEmpty()) {
+    this.loginFloodgate = Settings.IMP.MAIN.STRINGS.LOGIN_FLOODGATE.isEmpty() ? null
+        : SERIALIZER.deserialize(Settings.IMP.MAIN.STRINGS.LOGIN_FLOODGATE);
+    if (Settings.IMP.MAIN.STRINGS.LOGIN_FLOODGATE_TITLE.isEmpty()
+        && Settings.IMP.MAIN.STRINGS.LOGIN_FLOODGATE_SUBTITLE.isEmpty()) {
       this.loginFloodgateTitle = null;
     } else {
       this.loginFloodgateTitle = Title.title(
           SERIALIZER.deserialize(Settings.IMP.MAIN.STRINGS.LOGIN_FLOODGATE_TITLE),
           SERIALIZER.deserialize(Settings.IMP.MAIN.STRINGS.LOGIN_FLOODGATE_SUBTITLE),
-          Settings.IMP.MAIN.PREMIUM_TITLE_SETTINGS.toTimes()
-      );
+          Settings.IMP.MAIN.PREMIUM_TITLE_SETTINGS.toTimes());
     }
 
     this.nicknameInvalidKick = SERIALIZER.deserialize(Settings.IMP.MAIN.STRINGS.NICKNAME_INVALID_KICK);
@@ -251,9 +253,11 @@ public class LimboAuth {
 
     if (Settings.IMP.MAIN.CHECK_PASSWORD_STRENGTH) {
       this.unsafePasswords.clear();
-      Path unsafePasswordsPath = Paths.get(this.dataDirectoryFile.getAbsolutePath(), Settings.IMP.MAIN.UNSAFE_PASSWORDS_FILE);
+      Path unsafePasswordsPath = Paths.get(this.dataDirectoryFile.getAbsolutePath(),
+          Settings.IMP.MAIN.UNSAFE_PASSWORDS_FILE);
       if (!unsafePasswordsPath.toFile().exists()) {
-        Files.copy(Objects.requireNonNull(this.getClass().getResourceAsStream("/unsafe_passwords.txt")), unsafePasswordsPath);
+        Files.copy(Objects.requireNonNull(this.getClass().getResourceAsStream("/unsafe_passwords.txt")),
+            unsafePasswordsPath);
       }
 
       try (Stream<String> unsafePasswordsStream = Files.lines(unsafePasswordsPath)) {
@@ -266,19 +270,20 @@ public class LimboAuth {
     Settings.DATABASE dbConfig = Settings.IMP.DATABASE;
     switch (dbConfig.STORAGE_TYPE.toLowerCase(Locale.ROOT)) {
       case "h2": {
-        this.connectionSource = new JdbcPooledConnectionSource("jdbc:h2:" + this.dataDirectoryFile.getAbsoluteFile() + "/limboauth");
+        this.connectionSource = new JdbcPooledConnectionSource(
+            "jdbc:h2:" + this.dataDirectoryFile.getAbsoluteFile() + "/limboauth");
         break;
       }
       case "mysql": {
         this.connectionSource = new JdbcPooledConnectionSource(
-            "jdbc:mysql://" + dbConfig.HOSTNAME + "/" + dbConfig.DATABASE + dbConfig.CONNECTION_PARAMETERS, dbConfig.USER, dbConfig.PASSWORD
-        );
+            "jdbc:mysql://" + dbConfig.HOSTNAME + "/" + dbConfig.DATABASE + dbConfig.CONNECTION_PARAMETERS,
+            dbConfig.USER, dbConfig.PASSWORD);
         break;
       }
       case "postgresql": {
         this.connectionSource = new JdbcPooledConnectionSource(
-            "jdbc:postgresql://" + dbConfig.HOSTNAME + "/" + dbConfig.DATABASE + dbConfig.CONNECTION_PARAMETERS, dbConfig.USER, dbConfig.PASSWORD
-        );
+            "jdbc:postgresql://" + dbConfig.HOSTNAME + "/" + dbConfig.DATABASE + dbConfig.CONNECTION_PARAMETERS,
+            dbConfig.USER, dbConfig.PASSWORD);
         break;
       }
       default: {
@@ -308,23 +313,15 @@ public class LimboAuth {
     manager.unregister("2fa");
     manager.unregister("limboauth");
 
-    manager.register("unregister", new UnregisterCommand(this, this.playerDao), "unreg");
     manager.register("premium", new PremiumCommand(this, this.playerDao), "license");
-    manager.register("forceunregister", new ForceUnregisterCommand(this, this.server, this.playerDao), "forceunreg");
-    manager.register("changepassword", new ChangePasswordCommand(this.playerDao), "changepass");
-    manager.register("forcechangepassword", new ForceChangePasswordCommand(this.server, this.playerDao), "forcechangepass");
     manager.register("destroysession", new DestroySessionCommand(this));
-    if (Settings.IMP.MAIN.ENABLE_TOTP) {
-      manager.register("2fa", new TotpCommand(this.playerDao), "totp");
-    }
-    manager.register("limboauth", new LimboAuthCommand(this), "la", "auth", "lauth");
+    manager.register("limboauth", new LimboAuthCommand(this));
 
     Settings.MAIN.AUTH_COORDS authCoords = Settings.IMP.MAIN.AUTH_COORDS;
     VirtualWorld authWorld = this.factory.createVirtualWorld(
         Dimension.valueOf(Settings.IMP.MAIN.DIMENSION),
         authCoords.X, authCoords.Y, authCoords.Z,
-        (float) authCoords.YAW, (float) authCoords.PITCH
-    );
+        (float) authCoords.YAW, (float) authCoords.PITCH);
 
     if (Settings.IMP.MAIN.LOAD_WORLD) {
       try {
@@ -361,10 +358,7 @@ public class LimboAuth {
         .createLimbo(authWorld)
         .setName("LimboAuth")
         .setWorldTime(Settings.IMP.MAIN.WORLD_TICKS)
-        .setGameMode(GameMode.valueOf(Settings.IMP.MAIN.GAME_MODE))
-        .registerCommand(new LimboCommandMeta(this.filterCommands(Settings.IMP.MAIN.REGISTER_COMMAND)))
-        .registerCommand(new LimboCommandMeta(this.filterCommands(Settings.IMP.MAIN.LOGIN_COMMAND)))
-        .registerCommand(new LimboCommandMeta(this.filterCommands(Settings.IMP.MAIN.TOTP_COMMAND)));
+        .setGameMode(GameMode.valueOf(Settings.IMP.MAIN.GAME_MODE));
 
     EventManager eventManager = this.server.getEventManager();
     eventManager.unregisterListeners(this);
@@ -394,7 +388,8 @@ public class LimboAuth {
   }
 
   private List<String> filterCommands(List<String> commands) {
-    return commands.stream().filter(command -> command.startsWith("/")).map(command -> command.substring(1)).collect(Collectors.toList());
+    return commands.stream().filter(command -> command.startsWith("/")).map(command -> command.substring(1))
+        .collect(Collectors.toList());
   }
 
   private void checkCache(Map<String, ? extends CachedUser> userMap, long time) {
@@ -419,11 +414,13 @@ public class LimboAuth {
         break;
       }
       case "postgresql": {
-        findSql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_CATALOG = '" + database + "' AND TABLE_NAME = '" + tableName + "';";
+        findSql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_CATALOG = '" + database
+            + "' AND TABLE_NAME = '" + tableName + "';";
         break;
       }
       case "mysql": {
-        findSql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '" + database + "' AND TABLE_NAME = '" + tableName + "';";
+        findSql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '" + database
+            + "' AND TABLE_NAME = '" + tableName + "';";
         break;
       }
       default: {
@@ -463,7 +460,8 @@ public class LimboAuth {
     String username = player.getUsername();
     String lowercaseUsername = username.toLowerCase(Locale.ROOT);
     this.cachedAuthChecks.remove(lowercaseUsername);
-    this.cachedAuthChecks.put(lowercaseUsername, new CachedSessionUser(System.currentTimeMillis(), player.getRemoteAddress().getAddress(), username));
+    this.cachedAuthChecks.put(lowercaseUsername,
+        new CachedSessionUser(System.currentTimeMillis(), player.getRemoteAddress().getAddress(), username));
   }
 
   public void removePlayerFromCache(String username) {
@@ -477,14 +475,17 @@ public class LimboAuth {
       return true;
     } else {
       CachedSessionUser sessionUser = this.cachedAuthChecks.get(lowercaseUsername);
-      return !sessionUser.getInetAddress().equals(player.getRemoteAddress().getAddress()) || !sessionUser.getUsername().equals(username);
+      return !sessionUser.getInetAddress().equals(player.getRemoteAddress().getAddress())
+          || !sessionUser.getUsername().equals(username);
     }
   }
 
   public void authPlayer(Player player) {
-    boolean isFloodgate = !Settings.IMP.MAIN.FLOODGATE_NEED_AUTH && this.floodgateApi.isFloodgatePlayer(player.getUniqueId());
+    boolean isFloodgate = !Settings.IMP.MAIN.FLOODGATE_NEED_AUTH
+        && this.floodgateApi.isLinkedPlayer(player.getUniqueId());
     String nickname = player.getUsername();
-    if (this.nicknameValidationPattern.matcher((isFloodgate) ? nickname.substring(this.floodgateApi.getPrefixLength()) : nickname).matches()) {
+    if (this.nicknameValidationPattern
+        .matcher((isFloodgate) ? nickname.substring(this.floodgateApi.getPrefixLength()) : nickname).matches()) {
       RegisteredPlayer registeredPlayer = AuthSessionHandler.fetchInfo(this.playerDao, nickname);
 
       boolean onlineMode = player.isOnlineMode();
@@ -494,7 +495,8 @@ public class LimboAuth {
         if (registeredPlayer == null || registeredPlayer.getHash().isEmpty()) {
           registeredPlayer = AuthSessionHandler.fetchInfo(this.playerDao, player.getUniqueId());
           if (registeredPlayer == null || registeredPlayer.getHash().isEmpty()) {
-            // Due to the current connection state, which is set to LOGIN there, we cannot send the packets.
+            // Due to the current connection state, which is set to LOGIN there, we cannot
+            // send the packets.
             // We need to wait for the PLAY connection state to set.
             this.postLoginTasks.put(player.getUniqueId(), () -> {
               if (onlineMode) {
@@ -529,8 +531,10 @@ public class LimboAuth {
         Consumer<TaskEvent> eventConsumer = (event) -> this.sendPlayer(event, null);
         eventManager.fire(new PreRegisterEvent(eventConsumer, result, player)).thenAcceptAsync(eventConsumer);
       } else {
-        Consumer<TaskEvent> eventConsumer = (event) -> this.sendPlayer(event, ((PreAuthorizationEvent) event).getPlayerInfo());
-        eventManager.fire(new PreAuthorizationEvent(eventConsumer, result, player, registeredPlayer)).thenAcceptAsync(eventConsumer);
+        Consumer<TaskEvent> eventConsumer = (event) -> this.sendPlayer(event,
+            ((PreAuthorizationEvent) event).getPlayerInfo());
+        eventManager.fire(new PreAuthorizationEvent(eventConsumer, result, player, registeredPlayer))
+            .thenAcceptAsync(eventConsumer);
       }
     } else {
       player.disconnect(this.nicknameInvalidKick);
@@ -574,10 +578,10 @@ public class LimboAuth {
     try {
       int statusCode = this.client.send(
           HttpRequest.newBuilder()
-              .uri(URI.create(String.format(Settings.IMP.MAIN.ISPREMIUM_AUTH_URL, URLEncoder.encode(lowercaseNickname, StandardCharsets.UTF_8))))
+              .uri(URI.create(String.format(Settings.IMP.MAIN.ISPREMIUM_AUTH_URL,
+                  URLEncoder.encode(lowercaseNickname, StandardCharsets.UTF_8))))
               .build(),
-          HttpResponse.BodyHandlers.ofString()
-      ).statusCode();
+          HttpResponse.BodyHandlers.ofString()).statusCode();
 
       boolean isPremium = statusCode == 200;
 
@@ -616,7 +620,8 @@ public class LimboAuth {
           premiumUnregisteredQuery.setCountOf(true);
 
           if (Settings.IMP.MAIN.ONLINE_MODE_NEED_AUTH) {
-            return this.playerDao.countOf(premiumRegisteredQuery.prepare()) == 0 && this.playerDao.countOf(premiumUnregisteredQuery.prepare()) != 0;
+            return this.playerDao.countOf(premiumRegisteredQuery.prepare()) == 0
+                && this.playerDao.countOf(premiumUnregisteredQuery.prepare()) != 0;
           } else {
             return this.playerDao.countOf(premiumRegisteredQuery.prepare()) == 0;
           }
@@ -651,7 +656,8 @@ public class LimboAuth {
   }
 
   static {
-    // requireNonNull prevents the shade plugin from excluding the drivers in minimized jar.
+    // requireNonNull prevents the shade plugin from excluding the drivers in
+    // minimized jar.
     Objects.requireNonNull(com.mysql.cj.jdbc.Driver.class);
     Objects.requireNonNull(com.mysql.cj.conf.url.SingleConnectionUrl.class);
 

@@ -42,7 +42,6 @@ public class PremiumCommand implements SimpleCommand {
   private final Component successful;
   private final Component errorOccurred;
   private final Component notPremium;
-  private final Component wrongPassword;
   private final Component usage;
   private final Component notPlayer;
 
@@ -57,7 +56,6 @@ public class PremiumCommand implements SimpleCommand {
     this.successful = serializer.deserialize(Settings.IMP.MAIN.STRINGS.PREMIUM_SUCCESSFUL);
     this.errorOccurred = serializer.deserialize(Settings.IMP.MAIN.STRINGS.ERROR_OCCURRED);
     this.notPremium = serializer.deserialize(Settings.IMP.MAIN.STRINGS.NOT_PREMIUM);
-    this.wrongPassword = serializer.deserialize(Settings.IMP.MAIN.STRINGS.WRONG_PASSWORD);
     this.usage = serializer.deserialize(Settings.IMP.MAIN.STRINGS.PREMIUM_USAGE);
     this.notPlayer = serializer.deserialize(Settings.IMP.MAIN.STRINGS.NOT_PLAYER);
   }
@@ -68,37 +66,31 @@ public class PremiumCommand implements SimpleCommand {
     String[] args = invocation.arguments();
 
     if (source instanceof Player) {
-      if (args.length == 2) {
-        if (this.confirmKeyword.equalsIgnoreCase(args[1])) {
-          String username = ((Player) source).getUsername();
-          RegisteredPlayer player = AuthSessionHandler.fetchInfo(this.playerDao, username);
-          if (player == null) {
-            source.sendMessage(this.notRegistered, MessageType.SYSTEM);
-          } else if (player.getHash().isEmpty()) {
-            source.sendMessage(this.alreadyPremium, MessageType.SYSTEM);
-          } else if (AuthSessionHandler.checkPassword(args[0], player, this.playerDao)) {
-            if (this.plugin.isPremiumExternal(username)) {
-              try {
-                player.setHash("");
-                this.playerDao.update(player);
-                this.plugin.removePlayerFromCache(username);
-                ((Player) source).disconnect(this.successful);
-              } catch (SQLException e) {
-                source.sendMessage(this.errorOccurred, MessageType.SYSTEM);
-                e.printStackTrace();
-              }
-            } else {
-              source.sendMessage(this.notPremium, MessageType.SYSTEM);
-            }
-          } else {
-            source.sendMessage(this.wrongPassword, MessageType.SYSTEM);
-          }
 
-          return;
+      String username = ((Player) source).getUsername();
+      RegisteredPlayer player = AuthSessionHandler.fetchInfo(this.playerDao, username);
+      if (player == null) {
+        source.sendMessage(this.notRegistered, MessageType.SYSTEM);
+      } else if (player.getHash().isEmpty()) {
+        source.sendMessage(this.alreadyPremium, MessageType.SYSTEM);
+      } else {
+        if (this.plugin.isPremiumExternal(username)) {
+          try {
+            player.setHash("");
+            this.playerDao.update(player);
+            this.plugin.removePlayerFromCache(username);
+            ((Player) source).disconnect(this.successful);
+          } catch (SQLException e) {
+            source.sendMessage(this.errorOccurred, MessageType.SYSTEM);
+            e.printStackTrace();
+          }
+        } else {
+          source.sendMessage(this.notPremium, MessageType.SYSTEM);
         }
       }
 
-      source.sendMessage(this.usage, MessageType.SYSTEM);
+      return;
+
     } else {
       source.sendMessage(this.notPlayer, MessageType.SYSTEM);
     }

@@ -18,10 +18,13 @@
 package net.elytrium.limboauth.floodgate;
 
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+
 import org.geysermc.floodgate.api.FloodgateApi;
 
 /**
- * Holder class for optional floodgate feature, we can't inject of optional plugins without holders due to Velocity structure.
+ * Holder class for optional floodgate feature, we can't inject of optional
+ * plugins without holders due to Velocity structure.
  */
 public class FloodgateApiHolder {
 
@@ -33,6 +36,20 @@ public class FloodgateApiHolder {
 
   public boolean isFloodgatePlayer(UUID uuid) {
     return this.floodgateApi.isFloodgatePlayer(uuid);
+  }
+
+  public boolean isLinkedPlayer(UUID uuid)
+  {
+    try {
+      return this.floodgateApi.getPlayerLink().isLinkedPlayer(uuid).get().booleanValue();
+    } catch(InterruptedException e)
+    {
+      System.out.println("got interrupted!");
+    } catch(ExecutionException e)
+    {
+      System.out.println("got interrupted!");
+    }
+    return false;
   }
 
   public int getPrefixLength() {
